@@ -3,6 +3,21 @@
 All notable changes are documented here, in [Conventional
 Commits](https://www.conventionalcommits.org) order (see `CONTRIBUTING.md`).
 
+## 0.6.0 — 2026-10-10
+
+- The row page groups its options into sections — General, Decision server,
+  Scoring, When to run, Marker and diagnostics — instead of one flat list of
+  nineteen raw keys.
+- Each option now carries a human label, an optional/required badge, its raw key,
+  a unit where one applies, and a line of help. Numbers get a narrow control,
+  toggles a checkbox, the token a password field.
+- Defaults are visible: they appear as the placeholder for a text or number
+  option and as an explicit note beside a toggle. A **Use default** control
+  appears on any option that has been changed and clears the override, so an
+  option returns to the schema's default without being guessed at.
+- The browser half carries the defaults it displays and a test holds them to the
+  schema, so the two cannot drift.
+
 ## 0.5.2 — 2026-10-10
 
 - The row page renders its controls even before the namespace's values arrive,

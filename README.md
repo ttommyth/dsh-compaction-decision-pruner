@@ -151,6 +151,11 @@ opening a page of its own. Each field saves as you change it; the plugin reads
 the value on its next compaction pass, so there is no save button and no
 restart.
 
+On the row's own page the options are grouped into sections — General,
+Decision server, Scoring, When to run, Marker and diagnostics — each showing its
+label, whether it is optional, its default, and a line of help. **Use default**
+clears a changed option so it falls back to the schema's value.
+
 The registration is deliberately unconditional. Gating it on a namespace lookup
 silently registers nothing when the lookup does not match, and a form that never
 appears is hard to tell from a form that is not needed.

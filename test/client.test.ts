@@ -14,6 +14,10 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
+import { resolveConfig } from "../src/index.js";
+
+/** Any base URL: the plugin needs one to resolve, and this test only reads defaults. */
+const DECISION_URL = "http://127.0.0.1:8888";
 
 interface Element {
 	type: unknown;
@@ -101,6 +105,20 @@ function fakeContext(options: { served?: boolean; empty?: boolean; noForm?: bool
 	};
 	return { ctx, slots, dictionaries, effects, form, watched: () => watched };
 }
+
+test("the browser half's option defaults match the plugin's own", () => {
+	// The browser half cannot import the node half, so it carries the defaults it
+	// shows. This is the guard that keeps the two from drifting apart.
+	const { exports } = loadClient();
+	const plugin = resolveConfig({ baseUrl: DECISION_URL }) as unknown as Record<string, unknown>;
+	const shown = exports.FIELD_DEFAULTS as Record<string, unknown>;
+	assert.deepEqual([...Object.keys(shown).sort()], [...Object.keys(plugin).sort()], "the same option set");
+	for (const [key, value] of Object.entries(shown)) {
+		if (key === "baseUrl") continue; // env-derived, and empty by design
+		assert.deepEqual(value, plugin[key], `default for ${key}`);
+	}
+	assert.equal(shown.baseUrl, "", "baseUrl ships empty so the plugin stays inert until set");
+});
 
 test("the browser half registers and declares the services it needs", () => {
 	const { id, exports } = loadClient();
