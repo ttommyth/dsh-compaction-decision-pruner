@@ -102,10 +102,8 @@ at a checkout with no install step.
 
 ## Configuration
 
-Every option is declared as a schema and marked `.volatile()`, which is what
-makes it a live setting in your DSH client rather than a patch-file-only value:
-dsh derives an editable form from volatile fields, and the plugin reads each
-value through its holder on every pass, so an edit applies **without a
+Every option is declared as a schema with `.volatile()` per field, and the plugin
+reads each value through its holder on every pass, so a change applies **without a
 restart**. `baseUrl` is the only option with no usable default; everything else
 falls back to the values below.
 
@@ -113,7 +111,15 @@ falls back to the values below.
 import { Config } from 'dsh-compaction-decision-pruner'
 ```
 
-Declaring the schema does two more things:
+**This package is a node-only plugin: it has no settings panel.** The schema above
+is the host-side half of a settings surface — enough for cordis to validate the
+row and for a client to derive controls from — but rendering is done by a
+browser module bound to the settings namespace, which this package does not ship.
+Every plugin observed to draw an editable form in the dsh web client ships such a
+module (`dsh-client-ui-settings-models` for the agent-default-model namespace).
+Until this package grows one, configure it in a patch file.
+
+Declaring the schema still buys two things:
 
 - The harness validates a row's config before the plugin starts, so a bad value
   fails the row with a diagnostic naming the field and the constraint:
@@ -123,9 +129,9 @@ Declaring the schema does two more things:
   ```
 
   rather than silently misconfiguring the pruner.
-- Field roles refine the control a client renders: `apiKey` is
-  `role('secret')`, so its value is kept off the wire behind a write-only input,
-  and `keepThreshold` is `role('slider')`.
+- Field roles are carried for whenever a client half renders them: `apiKey` is
+  `role('secret')` so its value stays off the wire behind a write-only input, and
+  `keepThreshold` is `role('slider')`.
 
 The plugin also validates its own input, rejecting unknown keys with a readable
 message and requiring `baseUrl` and a `{k}` placeholder in `question`. A value
