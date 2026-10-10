@@ -87,8 +87,26 @@ at a checkout with no install step.
 
 ## Configuration
 
-Every key is optional except `baseUrl`; an unknown key fails the row instead of
-being silently ignored, matching the shipped compaction plugins.
+Every option is declared as a schema, so the row is configurable from your DSH
+client as well as from a patch file. `baseUrl` is the only one with no
+usable default; everything else falls back to the values below.
+
+```ts
+import { Config } from 'dsh-compaction-decision-pruner'
+```
+
+Because the schema is declared, the harness validates a row's config before the
+plugin starts, and its config editor validates edits against the same schema. A
+bad value fails the row with a diagnostic naming the field and the constraint,
+for example:
+
+```text
+$ .keepThreshold expected number <= 1 but got 5 (at keepThreshold)
+```
+
+rather than silently misconfiguring the pruner. The plugin also validates its own
+input, rejecting unknown keys with a readable message and requiring `baseUrl` and
+a `{k}` placeholder in `question`.
 
 | Key | Default | Meaning |
 |---|---|---|
@@ -197,11 +215,11 @@ a missing guard that let `apply()` throw when no compaction backend was composed
 |---|---|
 | dsh | `0.2.0-rc.2` (verified) |
 | Node | `>=22.19` |
-| Runtime dependencies | none — every `@deepseek-ai/*` import is type-only, so the built output imports nothing but `node:fs` |
+| Runtime dependencies | one host-provided peer, `@deepseek-ai/schemastery`, which dsh already ships; every other `@deepseek-ai/*` import is type-only, so the built output pulls in nothing else |
 
-The plugin subclasses nothing and consumes no harness package at runtime: it
-wraps the composed `ctx.compaction.compactIfNeeded`, which the shipped
-`dsh-compaction-basic` documents as dynamically dispatched.
+The plugin subclasses nothing and consumes no harness package at runtime beyond
+the config schema: it wraps the composed `ctx.compaction.compactIfNeeded`, which
+the shipped `dsh-compaction-basic` documents as dynamically dispatched.
 
 dsh is a developer preview that promises breaking changes, so pin exact versions
 and re-run `npm test` after an upgrade — the suite is written to catch contract

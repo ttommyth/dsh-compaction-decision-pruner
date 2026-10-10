@@ -33,6 +33,7 @@
 
 import type { Context } from "@deepseek-ai/cordis";
 import { appendFileSync } from "node:fs";
+import z from "@deepseek-ai/schemastery";
 // Importing the declarations loads the `Context` and `SessionEventMap`
 // augmentations for `compaction`, `tokenMeter`, and the `compaction/*` events.
 import type { CompactionAgentContext, CompactionTrigger } from "@deepseek-ai/dsh-compaction";
@@ -132,6 +133,113 @@ const DEFAULTS: ResolvedConfig = Object.freeze({
 });
 
 const CONFIG_KEYS = new Set(Object.keys(DEFAULTS) as (keyof ResolvedConfig)[]);
+
+/**
+ * Row configuration schema.
+ *
+ * Declaring this is what makes every option a first-class, client-side setting:
+ * cordis validates a row's config against it before the plugin starts, and the
+ * harness's config editor validates edits against the same schema, so a user can
+ * change any option from their DSH client instead of hand-editing YAML. Bad
+ * values fail with a schema diagnostic rather than a silent misconfiguration.
+ *
+ * Defaults are duplicated from {@link DEFAULTS} on purpose — the plugin keeps
+ * its own validation so it can reject unknown keys with a readable message — and
+ * a test asserts the two never drift.
+ */
+export const Config = z.object({
+	enabled: z.boolean().default(DEFAULTS.enabled).description("Arm the pruner."),
+	baseUrl: z
+		.string()
+		.default(DEFAULTS.baseUrl)
+		.description("Decision-model server base URL. Required: there is no default host."),
+	model: z.string().default(DEFAULTS.model).description("Decision model id."),
+	apiKeyEnv: z
+		.string()
+		.default(DEFAULTS.apiKeyEnv)
+		.description("Environment variable holding the bearer token."),
+	apiKey: z
+		.string()
+		.default(DEFAULTS.apiKey)
+		.description("Literal bearer token; overrides apiKeyEnv when non-empty."),
+	keepThreshold: z
+		.number()
+		.min(0)
+		.max(1)
+		.default(DEFAULTS.keepThreshold)
+		.description("Mask a chunk when P(its information would be lost) is below this."),
+	question: z
+		.string()
+		.pattern(/\{k\}/u)
+		.default(DEFAULTS.question)
+		.description("`noul` question template. Must contain the {k} chunk placeholder."),
+	minChars: z
+		.number()
+		.step(1)
+		.min(0)
+		.default(DEFAULTS.minChars)
+		.description("Never score chunks smaller than this many characters."),
+	minTokensToScore: z
+		.number()
+		.step(1)
+		.min(0)
+		.default(DEFAULTS.minTokensToScore)
+		.description("Never score until the measured surface reaches this size."),
+	protectTail: z
+		.number()
+		.step(1)
+		.min(0)
+		.default(DEFAULTS.protectTail)
+		.description("Trailing surface nodes that are never candidates."),
+	maxChunks: z
+		.number()
+		.step(1)
+		.min(1)
+		.default(DEFAULTS.maxChunks)
+		.description("Chunks per scoring request."),
+	maxRequests: z
+		.number()
+		.step(1)
+		.min(1)
+		.default(DEFAULTS.maxRequests)
+		.description("Scoring requests allowed per compaction pass."),
+	scoreChars: z
+		.number()
+		.step(1)
+		.min(0)
+		.default(DEFAULTS.scoreChars)
+		.description("Per-chunk character window sent for scoring."),
+	maxStateChars: z
+		.number()
+		.step(1)
+		.min(0)
+		.default(DEFAULTS.maxStateChars)
+		.description("Whole-request state budget."),
+	timeoutMs: z
+		.number()
+		.step(1)
+		.min(1)
+		.default(DEFAULTS.timeoutMs)
+		.description("Per-request timeout in milliseconds."),
+	failureBackoffMs: z
+		.number()
+		.step(1)
+		.min(0)
+		.default(DEFAULTS.failureBackoffMs)
+		.description("Pause scoring for this long after a failure."),
+	dryRun: z
+		.boolean()
+		.default(DEFAULTS.dryRun)
+		.description("Score and log without rewriting the surface."),
+	traceFile: z
+		.string()
+		.default(DEFAULTS.traceFile)
+		.description("Append one NDJSON line per scored chunk. Empty disables tracing."),
+	markerTemplate: z
+		.string()
+		.default(DEFAULTS.markerTemplate)
+		.description("Marker text with {tokens}, {tool}, and {seq} placeholders.")
+});
 
 /** A `tool/result` event, narrowed from the session event union. */
 type ToolResultEvent = Extract<SessionEvent, { type: "tool/result" }>;

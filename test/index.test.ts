@@ -19,7 +19,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { apply, inject, name, resolveConfig, type DecisionPrunerConfig } from "../src/index.js";
+import { apply, Config, inject, name, resolveConfig, type DecisionPrunerConfig } from "../src/index.js";
 
 /**
  * A decision-server URL for tests. The plugin has no default host, so every
@@ -266,6 +266,63 @@ test("resolveConfig rejects a question without the {k} placeholder", () => {
 test("the plugin advertises its name and the services it needs", () => {
 	assert.equal(name, "compaction-decision-pruner");
 	assert.deepEqual(inject, ["compaction", "tokenMeter"]);
+});
+
+/* ------------------------------------------------------------------ */
+/*  Declared config schema                                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Run the exported schema over a candidate config.
+ *
+ * schemastery reports failures either as a standard-schema issues result or by
+ * throwing, so both are treated as "rejected".
+ */
+function schemaRejects(input: unknown): boolean {
+	try {
+		const result = Config["~standard"].validate(input) as { issues?: unknown };
+		return result.issues !== undefined;
+	} catch {
+		return true;
+	}
+}
+
+test("the schema accepts a config the plugin also accepts", () => {
+	assert.equal(schemaRejects({ baseUrl: DECISION_URL }), false);
+	assert.equal(schemaRejects(pruneConfig({ keepThreshold: 0.9 })), false);
+});
+
+test("the schema carries a default for every option, matching the plugin's own", () => {
+	const result = Config["~standard"].validate({}) as { value: Record<string, unknown>; issues?: unknown };
+	assert.equal(result.issues, undefined);
+	const schemaDefaults = result.value;
+	const pluginDefaults = resolveConfig({ baseUrl: DECISION_URL }) as unknown as Record<string, unknown>;
+
+	// A drift guard: the schema is what a DSH client renders, so its defaults must
+	// track the plugin's. `baseUrl` is compared separately because the plugin test
+	// supplies one.
+	assert.deepEqual(Object.keys(schemaDefaults).sort(), Object.keys(pluginDefaults).sort());
+	for (const key of Object.keys(pluginDefaults)) {
+		if (key === "baseUrl") continue;
+		assert.deepEqual(schemaDefaults[key], pluginDefaults[key], `schema default for ${key}`);
+	}
+	assert.equal(schemaDefaults.baseUrl, process.env.DECISION_BASE_URL ?? "");
+});
+
+test("every option is described, so a client can label it", () => {
+	const dict = (Config as unknown as { dict?: Record<string, unknown> }).dict ?? {};
+	assert.ok(Object.keys(dict).length > 0, "the schema should expose its fields");
+	for (const [key, schema] of Object.entries(dict)) {
+		const meta = (schema as { meta?: { description?: unknown } }).meta;
+		assert.equal(typeof meta?.description, "string", `${key} needs a description`);
+	}
+});
+
+test("the schema rejects values the plugin would refuse", () => {
+	assert.equal(schemaRejects({ baseUrl: DECISION_URL, keepThreshold: 2 }), true);
+	assert.equal(schemaRejects({ baseUrl: DECISION_URL, protectTail: -1 }), true);
+	assert.equal(schemaRejects({ baseUrl: DECISION_URL, question: "no placeholder" }), true);
+	assert.equal(schemaRejects({ baseUrl: DECISION_URL, maxChunks: 0 }), true);
 });
 
 /* ------------------------------------------------------------------ */

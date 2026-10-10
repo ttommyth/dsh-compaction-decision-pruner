@@ -31,6 +31,7 @@
  * @module dsh-compaction-decision-pruner
  */
 import type { Context } from "@deepseek-ai/cordis";
+import z from "@deepseek-ai/schemastery";
 /** Plugin row name; must match the id used in a profile patch. */
 export declare const name = "compaction-decision-pruner";
 /** Services this plugin needs composed before it arms. */
@@ -88,6 +89,60 @@ export interface DecisionPrunerConfig {
 }
 /** A resolved configuration with every field present. */
 export type ResolvedConfig = Required<DecisionPrunerConfig>;
+/**
+ * Row configuration schema.
+ *
+ * Declaring this is what makes every option a first-class, client-side setting:
+ * cordis validates a row's config against it before the plugin starts, and the
+ * harness's config editor validates edits against the same schema, so a user can
+ * change any option from their DSH client instead of hand-editing YAML. Bad
+ * values fail with a schema diagnostic rather than a silent misconfiguration.
+ *
+ * Defaults are duplicated from {@link DEFAULTS} on purpose — the plugin keeps
+ * its own validation so it can reject unknown keys with a readable message — and
+ * a test asserts the two never drift.
+ */
+export declare const Config: z<Schemastery.ObjectS<NoInfer<{
+    enabled: z<boolean, boolean, "defined">;
+    baseUrl: z<string, string, "defined">;
+    model: z<string, string, "defined">;
+    apiKeyEnv: z<string, string, "defined">;
+    apiKey: z<string, string, "defined">;
+    keepThreshold: z<number, number, "defined">;
+    question: z<string, string, "defined">;
+    minChars: z<number, number, "defined">;
+    minTokensToScore: z<number, number, "defined">;
+    protectTail: z<number, number, "defined">;
+    maxChunks: z<number, number, "defined">;
+    maxRequests: z<number, number, "defined">;
+    scoreChars: z<number, number, "defined">;
+    maxStateChars: z<number, number, "defined">;
+    timeoutMs: z<number, number, "defined">;
+    failureBackoffMs: z<number, number, "defined">;
+    dryRun: z<boolean, boolean, "defined">;
+    traceFile: z<string, string, "defined">;
+    markerTemplate: z<string, string, "defined">;
+}>>, Schemastery.ObjectT<NoInfer<{
+    enabled: z<boolean, boolean, "defined">;
+    baseUrl: z<string, string, "defined">;
+    model: z<string, string, "defined">;
+    apiKeyEnv: z<string, string, "defined">;
+    apiKey: z<string, string, "defined">;
+    keepThreshold: z<number, number, "defined">;
+    question: z<string, string, "defined">;
+    minChars: z<number, number, "defined">;
+    minTokensToScore: z<number, number, "defined">;
+    protectTail: z<number, number, "defined">;
+    maxChunks: z<number, number, "defined">;
+    maxRequests: z<number, number, "defined">;
+    scoreChars: z<number, number, "defined">;
+    maxStateChars: z<number, number, "defined">;
+    timeoutMs: z<number, number, "defined">;
+    failureBackoffMs: z<number, number, "defined">;
+    dryRun: z<boolean, boolean, "defined">;
+    traceFile: z<string, string, "defined">;
+    markerTemplate: z<string, string, "defined">;
+}>>, "plain">;
 /**
  * Resolve and validate plugin configuration.
  *
