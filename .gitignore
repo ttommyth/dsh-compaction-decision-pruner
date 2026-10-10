@@ -1,0 +1,9 @@
+# `lib/` is intentionally committed: dsh can load a profile plugin straight from
+# a checkout, with no install or build step. Run `npm run build` after changing
+# `src/`.
+node_modules/
+*.log
+.DS_Store
+.idea/
+.vscode/
+*.tsbuildinfo

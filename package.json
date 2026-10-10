@@ -1,0 +1,70 @@
+{
+  "name": "dsh-compaction-decision-pruner",
+  "version": "0.1.0",
+  "description": "Extractive context pruning for DeepSeek Harness compaction, driven by a joint-schema decision model (Jev / SystemOne API) instead of a generative summary.",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.19"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json",
+    "test": "tsx --test test/*.test.ts",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "cordis",
+    "cordis-plugin",
+    "compaction",
+    "context-compression",
+    "context-pruning",
+    "decision-model",
+    "jev",
+    "systemone",
+    "clef"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ttommyth/dsh-compaction-decision-pruner.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ttommyth/dsh-compaction-decision-pruner/issues"
+  },
+  "homepage": "https://github.com/ttommyth/dsh-compaction-decision-pruner#readme",
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.0.4"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.4",
+    "@deepseek-ai/dsh-compaction": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-llm": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-session": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-token-meter": "0.2.0-rc.2",
+    "@types/node": "^22.13.10",
+    "tsx": "^4.20.4",
+    "typescript": "^5.8.2"
+  }
+}

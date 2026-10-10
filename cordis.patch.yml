@@ -1,0 +1,18 @@
+# Loader patch: compose the decision-model pruner next to the backend it feeds.
+#
+# Merge this `insert` row into a profile's cordis patch layer, or pass the file
+# with `--patch`. The loader resolves a bare package name from the profile's
+# node_modules, or an absolute path to an entry file.
+#
+# baseUrl is required: point it at any server speaking the Jev/SystemOne
+# decision API. The example below is the port used by the model's own SGLang
+# cookbook; substitute whatever your deployment serves on.
+- insert:
+    - id: compaction-decision-pruner
+      name: 'dsh-compaction-decision-pruner'
+      config:
+        baseUrl: http://127.0.0.1:30000
+        model: clef-flash
+        keepThreshold: 0.35
+        minTokensToScore: 40000
+        protectTail: 6
