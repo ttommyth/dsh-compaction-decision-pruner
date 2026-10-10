@@ -63,7 +63,7 @@ function render(node: unknown, depth = 0): unknown {
 }
 
 /** A client context stub, recording what the module registers. */
-function fakeContext(options: { served?: boolean; empty?: boolean } = {}) {
+function fakeContext(options: { served?: boolean; empty?: boolean; noForm?: boolean } = {}) {
 	const slots: Array<{ spec: Record<string, any>; component: (props: any) => Element }> = [];
 	const dictionaries: Array<[string, unknown]> = [];
 	const effects: string[] = [];
@@ -88,7 +88,7 @@ function fakeContext(options: { served?: boolean; empty?: boolean } = {}) {
 			}
 		},
 		configForms: {
-			get: () => form,
+			get: () => (options.noForm === true ? undefined : form),
 			whileServed: (namespaces: string[], register: () => unknown) => {
 				watched = namespaces;
 				return options.served === false ? () => {} : register();
@@ -172,5 +172,12 @@ test("the card still renders when no value is available yet", () => {
 	const { ctx: bare, slots: bareSlots } = fakeContext({ empty: true });
 	exports.apply(bare);
 	const rendered = render(bareSlots[0].component({ view: "page", t: (key: string) => key }));
-	assert.match(JSON.stringify(rendered), /readOnly/, "an unavailable value degrades to a note, not a crash");
+	const text = JSON.stringify(rendered);
+	assert.match(text, /loading/, "an unloaded namespace says so rather than looking empty");
+	assert.match(text, /keepThreshold/, "its controls still come from the declared option list");
+
+	const { ctx: none, slots: noneSlots } = fakeContext({ noForm: true });
+	exports.apply(none);
+	const bare2 = render(noneSlots[0].component({ view: "page", t: (key: string) => key }));
+	assert.match(JSON.stringify(bare2), /readOnly/, "no controller at all degrades to a note, not a crash");
 });

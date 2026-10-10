@@ -3,6 +3,17 @@
 All notable changes are documented here, in [Conventional
 Commits](https://www.conventionalcommits.org) order (see `CONTRIBUTING.md`).
 
+## 0.5.2 — 2026-10-10
+
+- The row page renders its controls even before the namespace's values arrive,
+  with a "Loading current values…" note, instead of showing the "no editable
+  fields" note for both an unloaded namespace and a genuinely absent one. The two
+  are now distinguishable on sight, and a slow or momentarily empty snapshot no
+  longer looks like a broken plugin.
+- A client bundle already loaded in a long-lived page keeps running until the page
+  reloads: bumping the package is not enough for an open console tab, whose module
+  URLs carry a revision. Reload after installing.
+
 ## 0.5.1 — 2026-10-10
 
 - The card renders its fields. `useSyncExternalStore` with a `getSnapshot()` that
