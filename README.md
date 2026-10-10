@@ -67,19 +67,34 @@ reproduces exactly what produced the marker.
 
 ## Install
 
+dsh resolves a plugin name from the **profile's own `node_modules`**, so install
+it into the profile you want it in and then reference it by name — either with
+dsh's own plugin tooling:
+
 ```bash
-npm install dsh-compaction-decision-pruner
-# or, from a clone
-npm run build
+dsh plugin --profile <profile> add dsh-compaction-decision-pruner
 ```
 
-Compose it next to the backend it feeds:
+or, without a registry entry, straight from a released tag:
+
+```bash
+PROFILE=~/.dsh/profiles/web
+npm install --prefix "$PROFILE" --no-save --package-lock=false \
+  https://github.com/ttommyth/dsh-compaction-decision-pruner/archive/refs/tags/v0.2.0.tar.gz
+```
+
+Then compose it next to the backend it feeds:
 
 ```yaml
 - name: '@deepseek-ai/dsh-compaction-basic'
 - name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
 - name: 'dsh-compaction-decision-pruner'
 ```
+
+A row may instead name an absolute path to a `lib/index.js` (useful for a
+checkout), but a bare name is the idiomatic form and needs the profile-scoped
+install above. Note that the *application's* `node_modules` does not count as a
+profile — a row whose package is only there stays pending and never arms.
 
 A ready-to-merge row is in [`cordis.patch.yml`](./cordis.patch.yml). The loader
 also accepts an absolute path to `lib/index.js`, so a profile can point straight
