@@ -3,6 +3,22 @@
 All notable changes are documented here, in [Conventional
 Commits](https://www.conventionalcommits.org) order (see `CONTRIBUTING.md`).
 
+## 0.8.1 — 2026-10-10
+
+- The card no longer prints its own heading and description. The Plugins page
+  draws the plugin's title, icon, and crumb, and heads a row's page with its
+  display title and description, so the card was printing the header twice. It
+  now renders only the form; `view: 'summary'` stays as the page's fallback
+  description.
+- The README records which slot a configuration card belongs in, with the
+  contract's own wording — `plugins.item` is occupied by the official settings
+  pages, and a bundle's configuration belongs in `plugins.bundle.config` or
+  `plugins.row.config` — plus how the other cards do it: the official companion
+  packages use the same form kit as this one, the third-party
+  `dsh-plugin-marketplace` writes each change immediately and verifies it by
+  reading the section back, and the Settings-panel pages bind the document
+  through their own stores on a different surface.
+
 ## 0.8.0 — 2026-10-10
 
 - **The card says why it cannot configure, instead of blaming a plugin that is

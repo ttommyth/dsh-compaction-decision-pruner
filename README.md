@@ -197,6 +197,46 @@ an explanation, and this is not a fault in the plugin. Configure it by one of:
 Everything else about the console — chat, sessions, jobs, and the Plugins page
 itself — works over a LAN address; only settings require the loopback page.
 
+### Which slot a card registers into
+
+The Plugins page declares three slots that carry configuration, and the choice is
+not free — the contract says so itself
+(`dsh-client-ui-plugin-manager/lib/types/client/slot-contract.d.ts`):
+
+| Slot | Key | For |
+|---|---|---|
+| `plugins.item` | your own `id` | **Occupied by the official settings pages** — "one companion package per host-plane namespace"; the contract directs a bundle's configuration to one of the two below |
+| `plugins.bundle.config` | package name | a bundle's own settings, drawn on the bundle's page between its description and its rows |
+| `plugins.row.config` | `<package name>#<row id>` | one row a bundle declares, opened from that row's configure control — what this package uses |
+
+The page draws the title, icon, and crumb, and heads a row's page with the
+plugin's display title and description (falling back to the entry's
+`view: 'summary'` when the manifest carries none). The card therefore draws
+neither. It is asked for `summary` where the row needs a one-liner, and for `page`
+for the form itself.
+
+The page also offers `props.form` — `{ state, mutate }` — but hands it over only
+while the Host serves the namespace. This card does not use it: `state` is a
+one-shot snapshot, while a staged form needs the scope's `subscribe` to follow
+the document, and the primitives' model already carries the save, the reset, and
+the overridden badge.
+
+### How the other cards in the wild do it
+
+- **Official companion packages** (`dsh-client-ui-settings-web-search`,
+  `-agent-loop`, `-subagent`, `-shell`) use the same form kit as this package —
+  `SettingsFormModel` + `SettingsForm` + the shared field controls, staged drafts,
+  one save — and register into `plugins.item` while `whileServed` holds.
+- **`dsh-plugin-marketplace`**, a published third-party plugin, registers into
+  `plugins.bundle.config` keyed by package name and renders its own components
+  instead. It writes each change immediately through `scope.mutate`, then reads
+  the section back to tell a refused write from an applied one ("a settled write
+  is not an applied write"), keeping a legacy `connection.api` path for hosts
+  older than 0.1.2 — an immediate-write design rather than a staged one.
+- **The Settings-panel pages** (`-models`, `-general`, `-account`,
+  `-session-log`) are a different surface again: they bind the settings document
+  through their own stores for the Settings sidebar, not the Plugins page.
+
 Declaring the schema still buys two things:
 
 - The harness validates a row's config before the plugin starts, so a bad value

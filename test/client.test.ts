@@ -286,4 +286,8 @@ test("the page view renders one control per declared option", () => {
 	assert.ok(text.includes("SettingsValueField"), "steering options render as staged value fields");
 	assert.ok(text.includes("SettingsSecretField"), "the token renders as the write-only control");
 	assert.ok(text.includes("General") && text.includes("Scoring"), "the options are grouped");
+	// The page draws the plugin's title, icon, crumb, and description itself, so
+	// anything the card put above the form would print the row's header twice.
+	const root = rendered as { children: unknown[] };
+	assert.equal(root.children.length, 1, "the card renders the form and nothing above it");
 });
