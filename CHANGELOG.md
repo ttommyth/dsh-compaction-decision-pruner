@@ -3,6 +3,27 @@
 All notable changes are documented here, in [Conventional
 Commits](https://www.conventionalcommits.org) order (see `CONTRIBUTING.md`).
 
+## 0.7.0 — 2026-10-10
+
+- **Saving works.** The card wrote each edit as it was typed into a settings
+  scope whose `set` only stages a draft and whose `mutate` is what commits, so
+  every edit looked applied and none of them landed: leaving the page dropped
+  them. The card is now built on the harness's own staged-edit model —
+  `SettingsFormModel` holding the drafts, `SettingsForm` drawing the frame — so
+  one **Save** writes every staged edit in a single revision-fenced mutation, and
+  edits that were never saved are dropped rather than half-written.
+- The frame carries the states that matter: a **Discard** is gone (leaving the
+  page is the discard), and a save the Host refuses keeps the drafts and says so.
+- Each option now shows whether saving would leave an override, and clearing one
+  stages a reset so the option re-inherits the composition layer — an override
+  equal to the composed value is still shown as an override.
+- The token uses the shared write-only credential control, and reports whether a
+  token is stored from the presence of the key in the user layer, since the
+  literal never rides a response. Leaving it blank keeps whatever is stored.
+- The card no longer renders its own heading; the Plugins page draws the plugin's
+  name and one-liner. A namespace the Host does not serve says so in place of the
+  controls instead of being hidden.
+
 ## 0.6.1 — 2026-10-10
 
 - Text, number, and token fields accept typing. They rendered the namespace's value

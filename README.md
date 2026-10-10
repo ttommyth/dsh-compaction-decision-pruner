@@ -100,7 +100,7 @@ Three manifest fields do the work, and skipping any one of them fails quietly:
 | Field | Why |
 |---|---|
 | `dsh.bundle.patch` | Declares the row, so installing composes the plugin |
-| `dsh.client` | Serves the browser half that draws the settings card |
+| `dsh.client` | Serves the browser half that draws the settings card, and names the client packages that half requires |
 | `dsh.profile.bundles` membership | Without it the package is a dependency but never composed, so nothing loads and no row exists |
 
 Add the compaction backend it feeds, if the profile ships it disabled:
@@ -147,18 +147,30 @@ import { Config } from 'dsh-compaction-decision-pruner'
 so the `lib/client.js` browser half is what produces the form. It registers the
 row's configuration into the Plugins page's `plugins.row.config` slot, keyed
 `<package name>#<row id>`, which is what gives the row a **Configure** control
-opening a page of its own. Each field saves as you change it; the plugin reads
-the value on its next compaction pass, so there is no save button and no
-restart.
+opening a page of its own.
+
+The page stages what is typed and writes it only on **Save**. A settings scope's
+`set` stages a draft and `mutate` is what commits, so a control that wrote as it
+settled would turn one edit into a revision-fenced write nobody asked for — and
+edits that only looked applied are lost when the page is left. The card is
+therefore built on the harness's own staged form — `SettingsFormModel` holding
+the drafts, `SettingsForm` drawing the frame and owning the save,
+`SettingsValueField` and `SettingsSecretField` for the controls — from
+`@deepseek-ai/dsh-client-ui-primitives`, which `dsh.client.inject` names so the
+console loads it first. Leaving the page drops unsaved edits, a save the Host
+refuses keeps them and says so, and `save`/`discard` are the model's actions
+rather than this package's approximation of them.
 
 On the row's own page the options are grouped into sections — General,
 Decision server, Scoring, When to run, Marker and diagnostics — each showing its
-label, whether it is optional, its default, and a line of help. **Use default**
-clears a changed option so it falls back to the schema's value.
+label, whether it is optional, its default, and a line of help. An option that
+saving would leave overridden says so, and carries a reset that stages the clear
+so it re-inherits the composed value.
 
 The registration is deliberately unconditional. Gating it on a namespace lookup
 silently registers nothing when the lookup does not match, and a form that never
-appears is hard to tell from a form that is not needed.
+appears is hard to tell from a form that is not needed. A namespace the Host stops
+serving says so in place of the controls.
 
 Declaring the schema still buys two things:
 
