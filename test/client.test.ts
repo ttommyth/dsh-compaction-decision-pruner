@@ -108,10 +108,15 @@ test("it registers a card in the Plugins page for its own namespace", () => {
 	exports.apply(ctx);
 
 	assert.deepEqual([...watched()], ["compaction-decision-pruner"], "the card must follow the plugin's namespace");
-	assert.equal(slots.length, 1);
-	assert.equal(slots[0].spec.name, "plugins.item");
-	assert.equal(slots[0].spec.id, "compaction-decision-pruner");
-	assert.equal(typeof slots[0].spec.label, "function");
+	assert.equal(slots.length, 2, "the list item and the row configuration");
+	const slotNames = slots.map((slot) => slot.spec.name).sort();
+	assert.deepEqual([...slotNames], ["plugins.item", "plugins.row.config"]);
+	const rowSlot = slots.find((slot) => slot.spec.name === "plugins.row.config");
+	assert.equal(
+		rowSlot?.spec.key,
+		"dsh-compaction-decision-pruner#compaction-decision-pruner",
+		"the page addresses a row's form as ${bundle}#${rowId}"
+	);
 	assert.ok(dictionaries.some(([ns]) => ns === "settings.compactionDecisionPruner"), "the card needs its dictionary");
 });
 

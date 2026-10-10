@@ -1,17 +1,18 @@
-# Loader patch: compose the decision-model pruner next to the backend it feeds.
+# Bundle patch: declares this plugin's row, so installing the package as a
+# profile bundle both composes it and gives the Plugins page a row to configure
+# (`dsh.bundle.patch` in package.json points here).
 #
-# Merge this `insert` row into a profile's cordis patch layer, or pass the file
-# with `--patch`. The loader resolves a bare package name from the profile's
-# node_modules, or an absolute path to an entry file.
+# `baseUrl` is deliberately absent. The plugin has no host to assume, and an
+# unset value leaves it armed but inert — nothing is scored — instead of failing
+# the row. Set it in your DSH client's Plugins page, or export
+# DECISION_BASE_URL.
 #
-# baseUrl is required: point it at any server speaking the Jev/SystemOne
-# decision API. The example below is the port used by the model's own SGLang
-# cookbook; substitute whatever your deployment serves on.
+# To compose the plugin without the bundle path, merge this `insert` row into a
+# profile's cordis patch layer yourself, or pass the file with `--patch`.
 - insert:
     - id: compaction-decision-pruner
       name: 'dsh-compaction-decision-pruner'
       config:
-        baseUrl: http://127.0.0.1:30000
         model: clef-flash
         keepThreshold: 0.35
         minTokensToScore: 40000

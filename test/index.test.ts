@@ -250,9 +250,10 @@ test("resolveConfig rejects maxChunks below one", () => {
 	assert.throws(() => resolveConfig({ maxChunks: 0 }), /maxChunks/);
 });
 
-test("resolveConfig requires a decision server URL, since there is no default host", () => {
-	assert.throws(() => resolveConfig(), /baseUrl is required/);
-	assert.throws(() => resolveConfig({ baseUrl: "" }), /baseUrl is required/);
+test("an unset baseUrl is allowed, so a client can fill it in", () => {
+	// Fatal-on-missing would fail the row before anyone could configure it, which
+	// is why the bundle row ships without a host.
+	assert.equal(resolveConfig({}).baseUrl, "");
 });
 
 test("resolveConfig rejects an empty model", () => {
@@ -359,6 +360,22 @@ test("a cordis-validated config arms, even though volatile fields arrive as hold
 	await runPass(ctx, session);
 
 	assert.equal(appends.filter((entry) => entry.type === "tool/result").length, 1, "the pruner ran with holder values");
+});
+
+test("an unset baseUrl arms the plugin inert and works once it is set", async () => {
+	const { session } = sessionWithTools(1);
+	const { ctx, originalCalls } = fakeContext(session);
+	const bodies = stubFetch([0.01]);
+	let url = "";
+	apply(ctx as never, pruneConfig({ baseUrl: { get: () => url } as unknown as string }));
+
+	await runPass(ctx, session);
+	assert.deepEqual(bodies, [], "there is nothing to ask without a decision server");
+	assert.equal(originalCalls.length, 1, "compaction still runs");
+
+	url = DECISION_URL;
+	await runPass(ctx, session);
+	assert.equal(bodies.length, 1, "setting baseUrl takes effect without a restart");
 });
 
 test("a value changed after arming is picked up on the next pass", async () => {

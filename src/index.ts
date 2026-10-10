@@ -358,9 +358,7 @@ export function resolveConfig(config: DecisionPrunerConfig = {}): ResolvedConfig
 		}
 	}
 	if (resolved.maxChunks < 1) throw new Error("DecisionPrunerConfig: maxChunks must be at least 1");
-	if (resolved.baseUrl === "") {
-		throw new Error("DecisionPrunerConfig: baseUrl is required (set the row's baseUrl or DECISION_BASE_URL)");
-	}
+	if (resolved.model === "") throw new Error("DecisionPrunerConfig: model must not be empty");
 	if (resolved.model === "") throw new Error("DecisionPrunerConfig: model must not be empty");
 	for (const key of ["baseUrl", "model", "apiKeyEnv", "apiKey", "traceFile", "markerTemplate", "question"] as const) {
 		if (typeof resolved[key] !== "string") {
@@ -432,7 +430,10 @@ export function apply(ctx: Context, config: DecisionPrunerConfig = {}): void {
 		const session = agent.session;
 		if (!running) {
 			const current = live();
-			if (current.enabled && Date.now() >= disabledUntil) {
+			// No decision server means nothing to ask: stay armed but inert, so the
+			// row activates and its settings can be filled in from a client, and so
+			// setting baseUrl later starts pruning without a restart.
+			if (current.enabled && current.baseUrl !== "" && Date.now() >= disabledUntil) {
 				running = true;
 				try {
 					const result = await pruneSurface(ctx, current, session, signal);
@@ -459,6 +460,12 @@ export function apply(ctx: Context, config: DecisionPrunerConfig = {}): void {
 				} finally {
 					running = false;
 				}
+			} else if (current.enabled && current.baseUrl === "") {
+				logAt(
+					ctx,
+					"debug",
+					"decision prune inactive: no baseUrl (set it in your client or DECISION_BASE_URL)"
+				);
 			}
 		}
 		return await original(agent, trigger, signal);
@@ -468,7 +475,8 @@ export function apply(ctx: Context, config: DecisionPrunerConfig = {}): void {
 		ctx,
 		"info",
 		`armed (model=${armed.model} keep<${armed.keepThreshold} ` +
-			`floor=${armed.minTokensToScore}tok tail=${armed.protectTail})`
+			`floor=${armed.minTokensToScore}tok tail=${armed.protectTail}` +
+			`${armed.baseUrl === "" ? " baseUrl=unset (inert)" : ""})`
 	);
 	traceArmed(armed);
 }
