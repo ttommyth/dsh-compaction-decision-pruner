@@ -101,32 +101,46 @@ test("the browser half registers and declares the services it needs", () => {
 	assert.equal(typeof exports.apply, "function");
 });
 
-test("it registers a card in the Plugins page for its own namespace", () => {
+test("it registers the row's configuration without a namespace gate", () => {
 	const { exports } = loadClient();
-	const { ctx, slots, dictionaries, watched } = fakeContext();
+	const { ctx, slots, dictionaries } = fakeContext();
 
 	exports.apply(ctx);
 
-	assert.deepEqual([...watched()], ["compaction-decision-pruner"], "the card must follow the plugin's namespace");
-	assert.equal(slots.length, 2, "the list item and the row configuration");
-	const slotNames = slots.map((slot) => slot.spec.name).sort();
-	assert.deepEqual([...slotNames], ["plugins.item", "plugins.row.config"]);
-	const rowSlot = slots.find((slot) => slot.spec.name === "plugins.row.config");
+	// Registering unconditionally is the contract the harness's own bundle fixture
+	// follows: gating on a namespace lookup silently registers nothing when the
+	// lookup does not match, which is a form that never appears.
+	assert.equal(slots.length, 1, "exactly the row's configuration page");
+	const rowSlot = slots[0];
+	assert.equal(rowSlot.spec.name, "plugins.row.config");
 	assert.equal(
-		rowSlot?.spec.key,
+		rowSlot.spec.key,
 		"dsh-compaction-decision-pruner#compaction-decision-pruner",
 		"the page addresses a row's form as ${bundle}#${rowId}"
 	);
+	assert.equal(typeof rowSlot.spec.label, "function");
+	assert.equal(typeof rowSlot.spec.inject, "function", "the form must reach the component");
 	assert.ok(dictionaries.some(([ns]) => ns === "settings.compactionDecisionPruner"), "the card needs its dictionary");
 });
 
-test("a host that does not serve the namespace exposes no card", () => {
+test("the slot injects the form controller the component renders from", () => {
 	const { exports } = loadClient();
-	const { ctx, slots } = fakeContext({ served: false });
-
+	const { ctx, slots } = fakeContext();
 	exports.apply(ctx);
 
-	assert.deepEqual(slots, [], "a deployment without the plugin must show no trace of it");
+	const injected = slots[0].spec.inject();
+	assert.equal(typeof injected.form, "object");
+	assert.equal(typeof injected.form.getSnapshot, "function");
+});
+
+test("the summary view is a one-liner the row can show", () => {
+	const { exports } = loadClient();
+	const { ctx, slots } = fakeContext();
+	exports.apply(ctx);
+
+	const summary = slots[0].component({ t: (key: string) => key, view: "summary" });
+	assert.equal(typeof summary, "string");
+	assert.equal(summary, "summary");
 });
 
 test("the card renders one control per served field", () => {

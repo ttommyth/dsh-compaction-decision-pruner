@@ -3,6 +3,19 @@
 All notable changes are documented here, in [Conventional
 Commits](https://www.conventionalcommits.org) order (see `CONTRIBUTING.md`).
 
+## 0.5.0 — 2026-10-10
+
+- Registers `plugins.row.config` unconditionally. Gating the registration on a
+  `configForms.whileServed(...)` namespace lookup silently registered nothing, so
+  the row never gained its Configure control — the failure looked identical to
+  having no browser half at all. The harness's own bundle fixture registers
+  without a gate, and the page derives what to draw from the row ledger.
+- The slot now injects the form controller, so the component actually receives the
+  thing it renders from. It previously read `props.form`, which nothing supplied,
+  and so would have drawn its "no editable fields" note.
+- Renders the two views the page asks for: a one-line summary for the row's
+  description and the controls on the row's own page.
+
 ## 0.4.0 — 2026-10-10
 
 - Declares `dsh.bundle.patch`, so installing the package as a profile bundle

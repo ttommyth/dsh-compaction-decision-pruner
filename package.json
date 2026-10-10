@@ -1,6 +1,6 @@
 {
   "name": "dsh-compaction-decision-pruner",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Extractive context pruning for DeepSeek Harness compaction, driven by a joint-schema decision model (Jev / SystemOne API) instead of a generative summary.",
   "type": "module",
   "main": "lib/index.js",

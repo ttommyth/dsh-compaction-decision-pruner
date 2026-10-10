@@ -143,13 +143,17 @@ restart. Everything else falls back to the values below.
 import { Config } from 'dsh-compaction-decision-pruner'
 ```
 
-**The package ships both halves.** dsh renders settings client-side, so a schema
-alone produces no panel: the browser half in `lib/client.js` is what draws the
-card. It binds this plugin's settings namespace through the settings shell's
-`configForms` service and registers into the Plugins page's `plugins.item` slot
-while the host serves the namespace — so a deployment without the plugin shows no
-trace of it. Each field saves as you change it; the plugin reads the value on its
-next compaction pass, so there is no save button and no restart.
+**The package ships both halves.** dsh renders plugin configuration client-side,
+so the `lib/client.js` browser half is what produces the form. It registers the
+row's configuration into the Plugins page's `plugins.row.config` slot, keyed
+`<package name>#<row id>`, which is what gives the row a **Configure** control
+opening a page of its own. Each field saves as you change it; the plugin reads
+the value on its next compaction pass, so there is no save button and no
+restart.
+
+The registration is deliberately unconditional. Gating it on a namespace lookup
+silently registers nothing when the lookup does not match, and a form that never
+appears is hard to tell from a form that is not needed.
 
 Declaring the schema still buys two things:
 
