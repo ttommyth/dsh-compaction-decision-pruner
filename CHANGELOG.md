@@ -3,6 +3,23 @@
 All notable changes are documented here, in [Conventional
 Commits](https://www.conventionalcommits.org) order (see `CONTRIBUTING.md`).
 
+## 0.4.0 — 2026-10-10
+
+- Declares `dsh.bundle.patch`, so installing the package as a profile bundle
+  composes its row. Without it the Plugins page never enumerated the row, and the
+  settings card could not appear however correct the schema and browser half were.
+- The browser half registers the row's configuration in the `plugins.row.config`
+  slot, keyed `${bundle}#${rowId}`, alongside the list item in `plugins.item`.
+- `baseUrl` is no longer fatal. An unset value arms the plugin inert — nothing is
+  scored and no row fails — so it can be installed first and pointed at a server
+  afterwards, from the client or via `DECISION_BASE_URL`, with no restart.
+- The bundle patch ships no host to assume.
+
+## 0.3.0 — 2026-10-10
+
+- Adds the browser half (`lib/client.js`): a settings card bound to the plugin's
+  namespace, saving each field on change.
+
 ## 0.2.0 — 2026-10-10
 
 - Every option is now marked `.volatile()`, which is what makes it an editable

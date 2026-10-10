@@ -67,45 +67,77 @@ reproduces exactly what produced the marker.
 
 ## Install
 
-dsh resolves a plugin name from the **profile's own `node_modules`**, so install
-it into the profile you want it in and then reference it by name — either with
-dsh's own plugin tooling:
+Install it as a **bundle** in the profile you want it in — that is what makes dsh
+compose its row, serve its browser half, and give the Plugins page a row to
+configure:
 
 ```bash
 dsh plugin --profile <profile> add dsh-compaction-decision-pruner
 ```
 
-or, without a registry entry, straight from a released tag:
+Without a registry entry, add a released tag to the profile directly:
 
 ```bash
-PROFILE=~/.dsh/profiles/web
-npm install --prefix "$PROFILE" --no-save --package-lock=false \
-  https://github.com/ttommyth/dsh-compaction-decision-pruner/archive/refs/tags/v0.2.0.tar.gz
+cd ~/.dsh/profiles/web
+pnpm add https://github.com/ttommyth/dsh-compaction-decision-pruner/archive/refs/tags/v0.4.0.tar.gz
 ```
 
-Then compose it next to the backend it feeds:
+Then list it in that profile's enabled bundles — `package.json`:
+
+```jsonc
+{
+  "dependencies": { "dsh-compaction-decision-pruner": "…" },
+  "dsh": {
+    "profile": {
+      "bundles": ["dsh-compaction-decision-pruner", "…"]
+    }
+  }
+}
+```
+
+Three manifest fields do the work, and skipping any one of them fails quietly:
+
+| Field | Why |
+|---|---|
+| `dsh.bundle.patch` | Declares the row, so installing composes the plugin |
+| `dsh.client` | Serves the browser half that draws the settings card |
+| `dsh.profile.bundles` membership | Without it the package is a dependency but never composed, so nothing loads and no row exists |
+
+Add the compaction backend it feeds, if the profile ships it disabled:
 
 ```yaml
-- name: '@deepseek-ai/dsh-compaction-basic'
-- name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
-- name: 'dsh-compaction-decision-pruner'
+- id: tool-result-pruner
+  disabled: false
+- id: compaction-basic
+  disabled: false
 ```
 
-A row may instead name an absolute path to a `lib/index.js` (useful for a
-checkout), but a bare name is the idiomatic form and needs the profile-scoped
-install above. Note that the *application's* `node_modules` does not count as a
-profile — a row whose package is only there stays pending and never arms.
+**What the card needs.** The Plugins page renders a row's form from its
+`plugins.row.config` slot, keyed `${bundle}#${rowId}`, for the rows a *bundle's*
+patch declares. That is why the bundle membership above is not optional: with no
+bundle, the page never enumerates the row, and no amount of correct schema or
+browser code produces a panel.
 
-A ready-to-merge row is in [`cordis.patch.yml`](./cordis.patch.yml). The loader
-also accepts an absolute path to `lib/index.js`, so a profile can point straight
-at a checkout with no install step.
+A profile can instead compose a bare `insert` row by hand (that is what the
+container harnesses in the author's setup do, since they have no pnpm). Then the
+row works, but there is no bundle, so the Plugins page shows no form; the row may
+name an absolute path to a `lib/index.js`. Note that the *application's*
+`node_modules` does not count as a profile — a row whose package is only there
+stays pending and never arms.
+
+[`cordis.patch.yml`](./cordis.patch.yml) is the bundle patch described above.
 
 ## Configuration
 
 Every option is declared as a schema with `.volatile()` per field, and the plugin
 reads each value through its holder on every pass, so a change applies **without a
-restart**. `baseUrl` is the only option with no usable default; everything else
-falls back to the values below.
+restart**.
+
+`baseUrl` has no default and no host is assumed. While it is unset the plugin
+**arms but stays inert** — nothing is scored, and no row fails — so you can install
+it first and point it at a server afterwards, from the settings card or by
+exporting `DECISION_BASE_URL`. Setting it starts pruning on the next pass, with no
+restart. Everything else falls back to the values below.
 
 ```ts
 import { Config } from 'dsh-compaction-decision-pruner'
