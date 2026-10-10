@@ -59,7 +59,10 @@ function fakePrimitives() {
 			models.push(this as never);
 		}
 		shell() {
-			return { available: true, writable: true, dirty: this.staged.size > 0, invalid: false, saving: false, failed: false };
+			// The real model reports availability as `scope.status === "ready"`, which is
+			// how a namespace the Host does not serve stays unrenderable.
+			const status = (this.scope as { getSnapshot: () => { status?: string } }).getSnapshot().status;
+			return { available: status === "ready", writable: true, dirty: this.staged.size > 0, invalid: false, saving: false, failed: false };
 		}
 		field(name: string) {
 			const staged = this.staged.get(name);
@@ -122,14 +125,14 @@ function loadClient() {
 }
 
 /** A client context stub, recording what the module registers. */
-function fakeContext(options: { served?: boolean; empty?: boolean; noForm?: boolean } = {}) {
+function fakeContext(options: { served?: boolean; empty?: boolean; noForm?: boolean; status?: string; loopback?: boolean } = {}) {
 	const slots: Array<{ spec: Record<string, any>; component: (props: any) => Element }> = [];
 	const dictionaries: Array<[string, unknown]> = [];
 	const effects: string[] = [];
 	const writes: Array<readonly unknown[]> = [];
 	const value = { enabled: true, keepThreshold: 0.35, minChars: 480, question: "If {k} …" };
 	const scope = {
-		getSnapshot: () => (options.empty === true ? {} : { value }),
+		getSnapshot: () => (options.empty === true ? {} : { status: options.status ?? "ready", value }),
 		subscribe: () => () => {},
 		mutate: async (ops: readonly unknown[]) => {
 			writes.push(ops);
@@ -151,6 +154,7 @@ function fakeContext(options: { served?: boolean; empty?: boolean; noForm?: bool
 				return () => {};
 			}
 		},
+		remote: { $host: { isLoopback: options.loopback ?? true } },
 		configForms: { get: () => (options.noForm === true ? undefined : scope), whileServed: (_ns: string[], register: () => unknown) => register() },
 		effect: (callback: (() => unknown) | undefined, label?: string) => {
 			effects.push(label ?? "");
@@ -171,7 +175,7 @@ function render(node: unknown, depth = 0): unknown {
 test("the browser half registers and declares the services it needs", () => {
 	const { id, exports } = loadClient();
 	assert.equal(id, "dsh-compaction-decision-pruner");
-	assert.deepEqual([...exports.inject], ["slots", "locale", "configForms"]);
+	assert.deepEqual([...exports.inject], ["slots", "locale", "remote", "configForms"]);
 	assert.equal(typeof exports.apply, "function");
 });
 
@@ -225,7 +229,37 @@ test("a namespace whose scope is missing says so instead of crashing", () => {
 
 	const injected = slots[0].spec.inject();
 	const rendered = render(slots[0].component({ view: "page", t: (key: string) => key, useCompactionPruner: injected.hooks.compactionPruner, ...injected }));
-	assert.ok(JSON.stringify(rendered).includes("unavailable"), "the note names the state");
+	assert.ok(JSON.stringify(rendered).includes("\"unavailable\""), "the note names the state");
+});
+test("a page the Host never serves settings to says why, and where to go", () => {
+	// dsh serves a settings document only to a loopback page
+	// (`ctx.remote.$host.isLoopback`); anywhere else the settings stay
+	// process-local, so no amount of waiting makes this card configurable. Saying
+	// "not loaded" here would send a reader hunting for a fault that is not there.
+	const { exports } = loadClient();
+	const { ctx, slots, dictionaries } = fakeContext({ loopback: false, status: "unavailable" });
+	exports.apply(ctx);
+
+	const injected = slots[0].spec.inject();
+	const rendered = render(slots[0].component({ view: "page", t: (key: string) => key, useCompactionPruner: injected.hooks.compactionPruner, ...injected }));
+	const text = JSON.stringify(rendered);
+	assert.ok(text.includes("\"remote\""), "the note is the loopback one, not the unserved one");
+	assert.ok(!text.includes("SettingsValueField"), "no controls are offered that could not be saved");
+	const dictionary = dictionaries.find(([ns]) => ns === "settings.compactionDecisionPruner")?.[1] as { en: Record<string, string>; zh: Record<string, string> };
+	assert.ok(dictionary.en.remote.includes("127.0.0.1:3080"), "the copy names an address that does work");
+	assert.ok(dictionary.zh.remote.includes("127.0.0.1:3080"), "and its translation does too");
+});
+
+test("a document that has not arrived yet is not reported as a missing plugin", () => {
+	const { exports } = loadClient();
+	const { ctx, slots } = fakeContext({ status: "loading" });
+	exports.apply(ctx);
+
+	const injected = slots[0].spec.inject();
+	const rendered = render(slots[0].component({ view: "page", t: (key: string) => key, useCompactionPruner: injected.hooks.compactionPruner, ...injected }));
+	const text = JSON.stringify(rendered);
+	assert.ok(text.includes("\"loading\""), "the note is the loading one");
+	assert.ok(!text.includes("\"unavailable\""), "and not the unserved one");
 });
 
 test("the summary view is a one-liner the row can show", () => {
@@ -233,7 +267,7 @@ test("the summary view is a one-liner the row can show", () => {
 	const { ctx, slots } = fakeContext();
 	exports.apply(ctx);
 
-	const summary = render(slots[0].component({ t: (key: string) => key, view: "summary" }));
+	const summary = render(slots[0].component({ view: "summary", t: (key: string) => key }));
 	assert.equal(summary, "summary");
 });
 

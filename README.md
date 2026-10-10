@@ -172,6 +172,24 @@ silently registers nothing when the lookup does not match, and a form that never
 appears is hard to tell from a form that is not needed. A namespace the Host stops
 serving says so in place of the controls.
 
+**Settings are served to loopback pages only.** dsh hands a page the Host's
+settings document only when that page sits on a loopback address — the client
+decides with `ctx.remote.$host.isLoopback`, true for `localhost`, `[::1]`, or any
+`127/8` address. Anywhere else the settings remain process-local by design, so no
+write from such a page could be durable, and the card says so rather than
+offering controls that could not be saved. `--trusted-host` does not change this:
+it relaxes the console's `/api` browser-trust fence so a LAN page may use the
+console at all, which is a different rule from where settings may be written.
+
+Reaching the console over a LAN address therefore shows the form's absence with
+an explanation, and this is not a fault in the plugin. Configure it by one of:
+
+- opening the console on the host itself, at `http://127.0.0.1:3080`;
+- forwarding the port and browsing `http://localhost:3080` from wherever you are,
+  e.g. `ssh -L 3080:127.0.0.1:3080 <host>`;
+- editing the profile's own patch — `~/.dsh/profiles/web/cordis.patch.yml` — which
+  is the same file a save writes, and what the install docs describe.
+
 Declaring the schema still buys two things:
 
 - The harness validates a row's config before the plugin starts, so a bad value

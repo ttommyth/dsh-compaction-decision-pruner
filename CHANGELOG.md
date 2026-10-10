@@ -3,6 +3,24 @@
 All notable changes are documented here, in [Conventional
 Commits](https://www.conventionalcommits.org) order (see `CONTRIBUTING.md`).
 
+## 0.8.0 — 2026-10-10
+
+- **The card says why it cannot configure, instead of blaming a plugin that is
+  loaded.** Three different situations all read "the plugin is not loaded":
+
+  - a page the Host never serves a settings document to — anything that is not a
+    loopback address. dsh decides this with `ctx.remote.$host.isLoopback`
+    (`localhost`, `[::1]`, `127/8`), and keeps settings process-local everywhere
+    else, so no edit from such a page could be saved. The card now names the rule
+    and an address that does work (`http://127.0.0.1:3080`, or a forwarded
+    `http://localhost:3080`), and offers no controls it could not write;
+  - a settings document that has not arrived yet, which now reads as loading;
+  - a namespace the Host really does serve nothing for, which keeps a note that
+    mentions a row that is not active.
+- `remote` joins the injected services, for the loopback fact above.
+- The README documents the loopback rule and the three ways to configure the
+  plugin from elsewhere.
+
 ## 0.7.1 — 2026-10-10
 
 - A toggle row no longer prints its raw key beside the control: the value rows
