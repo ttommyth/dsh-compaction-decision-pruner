@@ -192,7 +192,13 @@ an explanation, and this is not a fault in the plugin. Configure it by one of:
   it is reached as `localhost` — and nothing on the Host needs changing, since a
   loopback authority is accepted by its own `/api` fence;
 - editing the profile's own patch — `~/.dsh/profiles/web/cordis.patch.yml` — which
-  is the same file a save writes, and what the install docs describe.
+  is the same file a save writes, and what the install docs describe;
+- driving the Host's settings RPC directly, if you would rather not use a
+  browser: the refusal is the *client's*, not the Host's. `dsh-api-settings-controller`
+  has no loopback check, so `POST /api/settings/describe` and
+  `POST /api/settings/mutate` (envelope `{type:'client-request', rpcId, method,
+  payload:{args}}`, args `{ns, ops, expectedRevision}`) answer any client that
+  holds a session cookie from the console's token onboarding.
 
 Everything else about the console — chat, sessions, jobs, and the Plugins page
 itself — works over a LAN address; only settings require the loopback page.
