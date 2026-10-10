@@ -34,6 +34,7 @@ function fakeReact() {
 			children
 		}),
 		useCallback: (fn: unknown) => fn,
+		useRef: (initial: unknown) => ({ current: initial }),
 		useEffect: () => {},
 		useState: (initial: unknown) => [typeof initial === "function" ? (initial as () => unknown)() : initial, () => {}],
 		useSyncExternalStore: (_subscribe: unknown, read: () => unknown) => read()

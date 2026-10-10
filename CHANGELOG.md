@@ -3,6 +3,18 @@
 All notable changes are documented here, in [Conventional
 Commits](https://www.conventionalcommits.org) order (see `CONTRIBUTING.md`).
 
+## 0.6.1 — 2026-10-10
+
+- Text, number, and token fields accept typing. They rendered the namespace's value
+  straight into `value`, so every keystroke re-rendered the field from a snapshot
+  that had not caught up: typing a 21-character URL left `t78`. Each field now
+  keeps a local draft while it is being edited, commits 500ms after the last
+  keystroke and on blur, and adopts the namespace's value again once it is not
+  being typed in.
+- Emptying a number goes back to its default rather than writing zero.
+- A value written from the card lands in the profile's own patch as an override,
+  which is what **Use default** clears.
+
 ## 0.6.0 — 2026-10-10
 
 - The row page groups its options into sections — General, Decision server,
