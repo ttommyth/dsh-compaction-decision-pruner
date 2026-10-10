@@ -186,9 +186,16 @@ an explanation, and this is not a fault in the plugin. Configure it by one of:
 
 - opening the console on the host itself, at `http://127.0.0.1:3080`;
 - forwarding the port and browsing `http://localhost:3080` from wherever you are,
-  e.g. `ssh -L 3080:127.0.0.1:3080 <host>`;
+  e.g. `ssh -L 3080:127.0.0.1:3080 <host>`, or any forwarder bound to your own
+  loopback (`socat TCP-LISTEN:3080,bind=127.0.0.1,fork TCP:<host>:3081`). The
+  browser's hostname is what counts, so the same relay serves settings fine when
+  it is reached as `localhost` — and nothing on the Host needs changing, since a
+  loopback authority is accepted by its own `/api` fence;
 - editing the profile's own patch — `~/.dsh/profiles/web/cordis.patch.yml` — which
   is the same file a save writes, and what the install docs describe.
+
+Everything else about the console — chat, sessions, jobs, and the Plugins page
+itself — works over a LAN address; only settings require the loopback page.
 
 Declaring the schema still buys two things:
 
