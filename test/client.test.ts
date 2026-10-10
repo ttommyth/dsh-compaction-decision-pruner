@@ -54,15 +54,23 @@ function loadClient(): { id: string; exports: Record<string, any> } {
 	return { id: registered.id, exports };
 }
 
+/** Render an element tree by invoking function components, as React would. */
+function render(node: unknown, depth = 0): unknown {
+	if (depth > 8 || node === null || typeof node !== "object") return node;
+	const el = node as { type: unknown; props: Record<string, unknown>; children?: unknown[] };
+	if (typeof el.type === "function") return render((el.type as (props: unknown) => unknown)(el.props), depth + 1);
+	return { ...el, children: (el.children ?? []).map((child) => render(child, depth + 1)) };
+}
+
 /** A client context stub, recording what the module registers. */
-function fakeContext(options: { served?: boolean } = {}) {
+function fakeContext(options: { served?: boolean; empty?: boolean } = {}) {
 	const slots: Array<{ spec: Record<string, any>; component: (props: any) => Element }> = [];
 	const dictionaries: Array<[string, unknown]> = [];
 	const effects: string[] = [];
 	let watched: string[] = [];
 	const value = { enabled: true, keepThreshold: 0.35, minChars: 480, question: "If {k} …" };
 	const form = {
-		getSnapshot: () => ({ value }),
+		getSnapshot: () => (options.empty === true ? {} : { value }),
 		subscribe: () => () => {},
 		set: async () => true,
 		dispose: () => {}
@@ -110,27 +118,27 @@ test("it registers the row's configuration without a namespace gate", () => {
 	// Registering unconditionally is the contract the harness's own bundle fixture
 	// follows: gating on a namespace lookup silently registers nothing when the
 	// lookup does not match, which is a form that never appears.
-	assert.equal(slots.length, 1, "exactly the row's configuration page");
-	const rowSlot = slots[0];
-	assert.equal(rowSlot.spec.name, "plugins.row.config");
-	assert.equal(
-		rowSlot.spec.key,
-		"dsh-compaction-decision-pruner#compaction-decision-pruner",
-		"the page addresses a row's form as ${bundle}#${rowId}"
-	);
-	assert.equal(typeof rowSlot.spec.label, "function");
-	assert.equal(typeof rowSlot.spec.inject, "function", "the form must reach the component");
+	const keys = slots.map((slot) => slot.spec.key).sort();
+	assert.deepEqual([...keys], ["dsh-compaction-decision-pruner#compaction-decision-pruner"], "the page keys a row as `${bundle}#${rowId}`");
+	for (const slot of slots) {
+		assert.equal(slot.spec.name, "plugins.row.config");
+		assert.equal(typeof slot.spec.label, "function");
+		assert.equal(typeof slot.component, "function");
+	}
 	assert.ok(dictionaries.some(([ns]) => ns === "settings.compactionDecisionPruner"), "the card needs its dictionary");
 });
 
-test("the slot injects the form controller the component renders from", () => {
+test("the registered component reads the namespace through its own controller", () => {
 	const { exports } = loadClient();
 	const { ctx, slots } = fakeContext();
 	exports.apply(ctx);
 
-	const injected = slots[0].spec.inject();
-	assert.equal(typeof injected.form, "object");
-	assert.equal(typeof injected.form.getSnapshot, "function");
+	// The page passes its own `form` binding; the component must ignore it and use
+	// the controller this half was built against, or it renders an empty note.
+	const rendered = render(slots[0].component({ view: "page", t: (key: string) => key, form: undefined }));
+	const text = JSON.stringify(rendered);
+	assert.ok(text.includes("keepThreshold"), "the fields must render from the controller");
+	assert.ok(!text.includes("readOnly"), "the fallback note must not render while values exist");
 });
 
 test("the summary view is a one-liner the row can show", () => {
@@ -138,7 +146,7 @@ test("the summary view is a one-liner the row can show", () => {
 	const { ctx, slots } = fakeContext();
 	exports.apply(ctx);
 
-	const summary = slots[0].component({ t: (key: string) => key, view: "summary" });
+	const summary = render(slots[0].component({ t: (key: string) => key, view: "summary" }));
 	assert.equal(typeof summary, "string");
 	assert.equal(summary, "summary");
 });
@@ -148,7 +156,7 @@ test("the card renders one control per served field", () => {
 	const { ctx, slots } = fakeContext();
 	exports.apply(ctx);
 
-	const element = slots[0].component({ form: ctx.configForms.get(), t: (key: string) => key });
+	const element = render(slots[0].component({ view: "page", t: (key: string) => key }));
 	const text = JSON.stringify(element);
 	assert.match(text, /Context pruning|title/);
 	for (const field of ["enabled", "keepThreshold", "minChars", "question"]) {
@@ -161,7 +169,8 @@ test("the card still renders when no value is available yet", () => {
 	const { ctx, slots } = fakeContext();
 	exports.apply(ctx);
 
-	const empty = { getSnapshot: () => ({}), subscribe: () => () => {}, set: async () => true };
-	const rendered = slots[0].component({ form: empty, t: (key: string) => key });
+	const { ctx: bare, slots: bareSlots } = fakeContext({ empty: true });
+	exports.apply(bare);
+	const rendered = render(bareSlots[0].component({ view: "page", t: (key: string) => key }));
 	assert.match(JSON.stringify(rendered), /readOnly/, "an unavailable value degrades to a note, not a crash");
 });

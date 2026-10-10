@@ -3,6 +3,23 @@
 All notable changes are documented here, in [Conventional
 Commits](https://www.conventionalcommits.org) order (see `CONTRIBUTING.md`).
 
+## 0.5.1 — 2026-10-10
+
+- The card renders its fields. `useSyncExternalStore` with a `getSnapshot()` that
+  answers a fresh object loops forever: React reports "Maximum update depth
+  exceeded" and the page logs `slot entry crashed in 'plugins.row.config'`, which
+  presents as a row whose Configure control opens an empty panel. The snapshot is
+  now held in state and replaced by the controller's own notification.
+- The component reads the namespace through the controller this half was built
+  against rather than a `form` prop, whose shape on the page is not that
+  controller.
+- Registers the row key as `${bundle}#${rowId}` with the plain row id, verified
+  against `data-plugin-row-detail` on the rendered row page (the row element's
+  `data-plugin-row` shows the *entry* id, `include:<rowId>`, which the key does
+  not use).
+- Verified end to end in a real console: the Configure control opens the row page
+  and all 19 fields render with live values, with no client errors.
+
 ## 0.5.0 — 2026-10-10
 
 - Registers `plugins.row.config` unconditionally. Gating the registration on a
