@@ -3,6 +3,19 @@
 All notable changes are documented here, in [Conventional
 Commits](https://www.conventionalcommits.org) order (see `CONTRIBUTING.md`).
 
+## 0.2.0 — 2026-10-10
+
+- Every option is now marked `.volatile()`, which is what makes it an editable
+  control in a DSH client. Without it dsh's `volatileForm()` derives no form, so
+  the settings surface offered nothing even though the schema was declared.
+- Configuration is read through the volatile holders on each compaction pass, so
+  a client-side edit takes effect without a restart. A value the plugin rejects
+  leaves the last good configuration in place.
+- Field roles: `apiKey` is `role('secret')` (kept off the wire behind a
+  write-only input), `keepThreshold` is `role('slider')`, and the integer
+  counters use `z.natural()`.
+- Adds a peer dependency on `@deepseek-ai/cosmokit` for `isVolatile`.
+
 ## 0.1.0 — 2026-10-10
 
 Initial release.

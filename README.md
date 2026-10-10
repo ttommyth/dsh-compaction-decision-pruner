@@ -87,26 +87,42 @@ at a checkout with no install step.
 
 ## Configuration
 
-Every option is declared as a schema, so the row is configurable from your DSH
-client as well as from a patch file. `baseUrl` is the only one with no
-usable default; everything else falls back to the values below.
+Every option is declared as a schema and marked `.volatile()`, which is what
+makes it a live setting in your DSH client rather than a patch-file-only value:
+dsh derives an editable form from volatile fields, and the plugin reads each
+value through its holder on every pass, so an edit applies **without a
+restart**. `baseUrl` is the only option with no usable default; everything else
+falls back to the values below.
 
 ```ts
 import { Config } from 'dsh-compaction-decision-pruner'
 ```
 
-Because the schema is declared, the harness validates a row's config before the
-plugin starts, and its config editor validates edits against the same schema. A
-bad value fails the row with a diagnostic naming the field and the constraint,
-for example:
+Declaring the schema does two more things:
 
-```text
-$ .keepThreshold expected number <= 1 but got 5 (at keepThreshold)
-```
+- The harness validates a row's config before the plugin starts, so a bad value
+  fails the row with a diagnostic naming the field and the constraint:
 
-rather than silently misconfiguring the pruner. The plugin also validates its own
-input, rejecting unknown keys with a readable message and requiring `baseUrl` and
-a `{k}` placeholder in `question`.
+  ```text
+  $ .keepThreshold expected number <= 1 but got 5 (at keepThreshold)
+  ```
+
+  rather than silently misconfiguring the pruner.
+- Field roles refine the control a client renders: `apiKey` is
+  `role('secret')`, so its value is kept off the wire behind a write-only input,
+  and `keepThreshold` is `role('slider')`.
+
+The plugin also validates its own input, rejecting unknown keys with a readable
+message and requiring `baseUrl` and a `{k}` placeholder in `question`. A value
+rejected at runtime — a live edit that slipped through — leaves the last good
+configuration in place instead of breaking compaction.
+
+### Writing your own integration
+
+If you drive this plugin from your own code rather than a profile patch, note
+that a cordis-validated config carries **volatile holders** for every field, so
+read them through `unwrapConfig()` (or your own `.get()`) instead of using the
+values directly.
 
 | Key | Default | Meaning |
 |---|---|---|
@@ -215,7 +231,7 @@ a missing guard that let `apply()` throw when no compaction backend was composed
 |---|---|
 | dsh | `0.2.0-rc.2` (verified) |
 | Node | `>=22.19` |
-| Runtime dependencies | one host-provided peer, `@deepseek-ai/schemastery`, which dsh already ships; every other `@deepseek-ai/*` import is type-only, so the built output pulls in nothing else |
+| Runtime dependencies | two host-provided peers, `@deepseek-ai/schemastery` (the config schema) and `@deepseek-ai/cosmokit` (reading volatile holders), both shipped with dsh; every other `@deepseek-ai/*` import is type-only |
 
 The plugin subclasses nothing and consumes no harness package at runtime beyond
 the config schema: it wraps the composed `ctx.compaction.compactIfNeeded`, which

@@ -19,7 +19,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { apply, Config, inject, name, resolveConfig, type DecisionPrunerConfig } from "../src/index.js";
+import { apply, Config, inject, name, resolveConfig, unwrapConfig, type DecisionPrunerConfig } from "../src/index.js";
 
 /**
  * A decision-server URL for tests. The plugin has no default host, so every
@@ -293,9 +293,10 @@ test("the schema accepts a config the plugin also accepts", () => {
 });
 
 test("the schema carries a default for every option, matching the plugin's own", () => {
-	const result = Config["~standard"].validate({}) as { value: Record<string, unknown>; issues?: unknown };
+	const result = Config["~standard"].validate({}) as { value: DecisionPrunerConfig; issues?: unknown };
 	assert.equal(result.issues, undefined);
-	const schemaDefaults = result.value;
+	// Volatile fields resolve to holders, so unwrap before comparing.
+	const schemaDefaults = unwrapConfig(result.value) as unknown as Record<string, unknown>;
 	const pluginDefaults = resolveConfig({ baseUrl: DECISION_URL }) as unknown as Record<string, unknown>;
 
 	// A drift guard: the schema is what a DSH client renders, so its defaults must
@@ -323,6 +324,71 @@ test("the schema rejects values the plugin would refuse", () => {
 	assert.equal(schemaRejects({ baseUrl: DECISION_URL, protectTail: -1 }), true);
 	assert.equal(schemaRejects({ baseUrl: DECISION_URL, question: "no placeholder" }), true);
 	assert.equal(schemaRejects({ baseUrl: DECISION_URL, maxChunks: 0 }), true);
+});
+
+/** The schema's field nodes, by key. */
+function schemaFields(): Record<string, { meta?: { role?: unknown; volatile?: unknown } }> {
+	return (Config as unknown as { dict?: Record<string, { meta?: { role?: unknown; volatile?: unknown } }> }).dict ?? {};
+}
+
+test("every option is volatile, which is what produces an editable form", () => {
+	// dsh's `volatileForm()` returns nothing for a non-volatile field, so a field
+	// without this flag gets no control in the client and is patch-file-only.
+	const inert = Object.entries(schemaFields())
+		.filter(([, schema]) => schema.meta?.volatile !== true)
+		.map(([key]) => key);
+	assert.deepEqual(inert, [], "these fields would not appear in a settings form");
+});
+
+test("the bearer token is marked secret and the ratio is a slider", () => {
+	const fields = schemaFields();
+	assert.equal(fields.apiKey?.meta?.role, "secret", "a token must not cross the wire");
+	assert.equal(fields.keepThreshold?.meta?.role, "slider");
+});
+
+test("a cordis-validated config arms, even though volatile fields arrive as holders", async () => {
+	// This is exactly the shape `apply()` receives in a real harness: cordis
+	// validates the row against `Config` first, so every volatile field is an
+	// opaque holder rather than a value.
+	const validated = (Config["~standard"].validate(pruneConfig()) as { value: DecisionPrunerConfig }).value;
+	const { session, appends } = sessionWithTools(1);
+	const { ctx } = fakeContext(session);
+	stubFetch([0.01]);
+
+	apply(ctx as never, validated);
+	await runPass(ctx, session);
+
+	assert.equal(appends.filter((entry) => entry.type === "tool/result").length, 1, "the pruner ran with holder values");
+});
+
+test("a value changed after arming is picked up on the next pass", async () => {
+	const { session, appends } = sessionWithTools(1);
+	const { ctx } = fakeContext(session);
+	// Masking happens when a chunk scores BELOW keepThreshold, so a low threshold
+	// keeps more. The chunk here scores 0.01.
+	let threshold = 0.005;
+	apply(ctx as never, pruneConfig({ keepThreshold: { get: () => threshold } as unknown as number }));
+	stubFetch([0.01]);
+
+	await runPass(ctx, session);
+	assert.equal(appends.length, 0, "a threshold below the score keeps the chunk");
+
+	threshold = 0.5;
+	await runPass(ctx, session);
+	assert.equal(appends.filter((entry) => entry.type === "tool/result").length, 1, "a live higher threshold masks it");
+});
+
+test("an invalid live value is ignored in favour of the last good configuration", async () => {
+	const { session, appends } = sessionWithTools(1);
+	const { ctx, logger } = fakeContext(session);
+	let threshold: number | string = 0.005;
+	apply(ctx as never, pruneConfig({ keepThreshold: { get: () => threshold } as unknown as number }));
+	stubFetch([0.01]);
+
+	threshold = "not a number";
+	await assert.doesNotReject(() => runPass(ctx, session));
+	assert.ok(logger.lines.some((line) => line.includes("ignoring invalid live configuration")));
+	assert.deepEqual(appends, [], "the last good threshold still applies");
 });
 
 /* ------------------------------------------------------------------ */

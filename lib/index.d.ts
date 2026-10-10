@@ -90,58 +90,75 @@ export interface DecisionPrunerConfig {
 /** A resolved configuration with every field present. */
 export type ResolvedConfig = Required<DecisionPrunerConfig>;
 /**
+ * Replace volatile holders with their current values.
+ *
+ * A field marked `.volatile()` in {@link Config} — which is what makes it
+ * editable in a harness's settings form — resolves to an opaque holder whose
+ * live value only `.get()` reveals. Reading through the holder on every use is
+ * also what makes a client-side edit take effect without a restart.
+ *
+ * @param config - a raw or cordis-validated configuration.
+ * @returns the same fields as plain values.
+ */
+export declare function unwrapConfig(config: DecisionPrunerConfig): DecisionPrunerConfig;
+/**
  * Row configuration schema.
  *
- * Declaring this is what makes every option a first-class, client-side setting:
- * cordis validates a row's config against it before the plugin starts, and the
- * harness's config editor validates edits against the same schema, so a user can
- * change any option from their DSH client instead of hand-editing YAML. Bad
- * values fail with a schema diagnostic rather than a silent misconfiguration.
+ * Declaring this gives a row two things. cordis validates its config against it
+ * before the plugin starts, so a bad value fails the row with a diagnostic
+ * naming the field instead of silently misconfiguring the pruner. And because
+ * every field is marked `.volatile()`, a harness's settings surface derives an
+ * editable form from it, which is how these options are changed from a client.
+ *
+ * A field that is not volatile gets no form control: dsh's `volatileForm()`
+ * returns nothing for it, so the option would only be editable in the patch
+ * file. Roles refine the control — `secret` keeps a value off the wire behind a
+ * write-only input, `slider` renders a 0–1 number as a slider.
  *
  * Defaults are duplicated from {@link DEFAULTS} on purpose — the plugin keeps
  * its own validation so it can reject unknown keys with a readable message — and
  * a test asserts the two never drift.
  */
 export declare const Config: z<Schemastery.ObjectS<NoInfer<{
-    enabled: z<boolean, boolean, "defined">;
-    baseUrl: z<string, string, "defined">;
-    model: z<string, string, "defined">;
-    apiKeyEnv: z<string, string, "defined">;
-    apiKey: z<string, string, "defined">;
-    keepThreshold: z<number, number, "defined">;
-    question: z<string, string, "defined">;
-    minChars: z<number, number, "defined">;
-    minTokensToScore: z<number, number, "defined">;
-    protectTail: z<number, number, "defined">;
-    maxChunks: z<number, number, "defined">;
-    maxRequests: z<number, number, "defined">;
-    scoreChars: z<number, number, "defined">;
-    maxStateChars: z<number, number, "defined">;
-    timeoutMs: z<number, number, "defined">;
-    failureBackoffMs: z<number, number, "defined">;
-    dryRun: z<boolean, boolean, "defined">;
-    traceFile: z<string, string, "defined">;
-    markerTemplate: z<string, string, "defined">;
+    enabled: z<boolean, boolean, "volatile-defined">;
+    baseUrl: z<string, string, "volatile-defined">;
+    model: z<string, string, "volatile-defined">;
+    apiKeyEnv: z<string, string, "volatile-defined">;
+    apiKey: z<string, string, "volatile-defined">;
+    keepThreshold: z<number, number, "volatile-defined">;
+    question: z<string, string, "volatile-defined">;
+    minChars: z<number, number, "volatile-defined">;
+    minTokensToScore: z<number, number, "volatile-defined">;
+    protectTail: z<number, number, "volatile-defined">;
+    maxChunks: z<number, number, "volatile-defined">;
+    maxRequests: z<number, number, "volatile-defined">;
+    scoreChars: z<number, number, "volatile-defined">;
+    maxStateChars: z<number, number, "volatile-defined">;
+    timeoutMs: z<number, number, "volatile-defined">;
+    failureBackoffMs: z<number, number, "volatile-defined">;
+    dryRun: z<boolean, boolean, "volatile-defined">;
+    traceFile: z<string, string, "volatile-defined">;
+    markerTemplate: z<string, string, "volatile-defined">;
 }>>, Schemastery.ObjectT<NoInfer<{
-    enabled: z<boolean, boolean, "defined">;
-    baseUrl: z<string, string, "defined">;
-    model: z<string, string, "defined">;
-    apiKeyEnv: z<string, string, "defined">;
-    apiKey: z<string, string, "defined">;
-    keepThreshold: z<number, number, "defined">;
-    question: z<string, string, "defined">;
-    minChars: z<number, number, "defined">;
-    minTokensToScore: z<number, number, "defined">;
-    protectTail: z<number, number, "defined">;
-    maxChunks: z<number, number, "defined">;
-    maxRequests: z<number, number, "defined">;
-    scoreChars: z<number, number, "defined">;
-    maxStateChars: z<number, number, "defined">;
-    timeoutMs: z<number, number, "defined">;
-    failureBackoffMs: z<number, number, "defined">;
-    dryRun: z<boolean, boolean, "defined">;
-    traceFile: z<string, string, "defined">;
-    markerTemplate: z<string, string, "defined">;
+    enabled: z<boolean, boolean, "volatile-defined">;
+    baseUrl: z<string, string, "volatile-defined">;
+    model: z<string, string, "volatile-defined">;
+    apiKeyEnv: z<string, string, "volatile-defined">;
+    apiKey: z<string, string, "volatile-defined">;
+    keepThreshold: z<number, number, "volatile-defined">;
+    question: z<string, string, "volatile-defined">;
+    minChars: z<number, number, "volatile-defined">;
+    minTokensToScore: z<number, number, "volatile-defined">;
+    protectTail: z<number, number, "volatile-defined">;
+    maxChunks: z<number, number, "volatile-defined">;
+    maxRequests: z<number, number, "volatile-defined">;
+    scoreChars: z<number, number, "volatile-defined">;
+    maxStateChars: z<number, number, "volatile-defined">;
+    timeoutMs: z<number, number, "volatile-defined">;
+    failureBackoffMs: z<number, number, "volatile-defined">;
+    dryRun: z<boolean, boolean, "volatile-defined">;
+    traceFile: z<string, string, "volatile-defined">;
+    markerTemplate: z<string, string, "volatile-defined">;
 }>>, "plain">;
 /**
  * Resolve and validate plugin configuration.
