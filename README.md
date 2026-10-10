@@ -279,10 +279,14 @@ npm run check   # typecheck src and test
 npm run build   # emit lib/ (lib/client.js is hand-written)
 ```
 
-The browser half is loaded in a sandbox with stubs for the client loader and the
-services it injects, so the suite covers that it registers, that it stays silent
-when the host does not serve the namespace, and that a missing value degrades to
-a note rather than throwing — the failure modes that would break a console.
+The browser half is loaded in a sandbox with stubs for the client loader, the
+services it injects, and the form primitives it draws with, so the suite covers
+that it registers, that the entry injects the form's own `edit`/`resetField`/
+`save`/`discard`, that a namespace the host does not serve degrades to a note
+rather than throwing, and that every option the card shows has a control. The
+sandbox cannot prove a save reaches the host — that needs the real
+`SettingsFormModel` — so a save is verified by driving a console and reading back
+the profile patch it writes.
 
 The suite drives the plugin through its public surface with fake cordis, session,
 and `fetch` objects that mirror the shapes dsh writes. Several tests are direct
