@@ -3,6 +3,12 @@
 All notable changes are documented here, in [Conventional
 Commits](https://www.conventionalcommits.org) order (see `CONTRIBUTING.md`).
 
+## 0.7.1 — 2026-10-10
+
+- A toggle row no longer prints its raw key beside the control: the value rows
+  never did, and the key is what the `Config` schema is written in, not something
+  a reader of the page needs.
+
 ## 0.7.0 — 2026-10-10
 
 - **Saving works.** The card wrote each edit as it was typed into a settings
