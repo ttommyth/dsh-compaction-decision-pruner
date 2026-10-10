@@ -111,13 +111,13 @@ falls back to the values below.
 import { Config } from 'dsh-compaction-decision-pruner'
 ```
 
-**This package is a node-only plugin: it has no settings panel.** The schema above
-is the host-side half of a settings surface — enough for cordis to validate the
-row and for a client to derive controls from — but rendering is done by a
-browser module bound to the settings namespace, which this package does not ship.
-Every plugin observed to draw an editable form in the dsh web client ships such a
-module (`dsh-client-ui-settings-models` for the agent-default-model namespace).
-Until this package grows one, configure it in a patch file.
+**The package ships both halves.** dsh renders settings client-side, so a schema
+alone produces no panel: the browser half in `lib/client.js` is what draws the
+card. It binds this plugin's settings namespace through the settings shell's
+`configForms` service and registers into the Plugins page's `plugins.item` slot
+while the host serves the namespace — so a deployment without the plugin shows no
+trace of it. Each field saves as you change it; the plugin reads the value on its
+next compaction pass, so there is no save button and no restart.
 
 Declaring the schema still buys two things:
 
@@ -221,10 +221,15 @@ POST {baseUrl}/v1/systemone
 ## Testing
 
 ```bash
-npm test        # contract suite — no model, server, or network needed
+npm test        # host + browser halves, no model, server, or browser needed
 npm run check   # typecheck src and test
-npm run build   # emit lib/
+npm run build   # emit lib/ (lib/client.js is hand-written)
 ```
+
+The browser half is loaded in a sandbox with stubs for the client loader and the
+services it injects, so the suite covers that it registers, that it stays silent
+when the host does not serve the namespace, and that a missing value degrades to
+a note rather than throwing — the failure modes that would break a console.
 
 The suite drives the plugin through its public surface with fake cordis, session,
 and `fetch` objects that mirror the shapes dsh writes. Several tests are direct
