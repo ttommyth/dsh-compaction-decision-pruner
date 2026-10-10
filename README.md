@@ -184,7 +184,7 @@ POST {baseUrl}/v1/systemone
 ## Testing
 
 ```bash
-npm test        # 34 tests, no model or server needed
+npm test        # contract suite — no model, server, or network needed
 npm run check   # typecheck src and test
 npm run build   # emit lib/
 ```

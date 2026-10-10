@@ -51,7 +51,7 @@ chmod +x .git/hooks/commit-msg
 ```bash
 npm ci
 npm run check      # typecheck src and test
-npm test           # 38 tests, no model or server needed
+npm test           # contract suite, no model or server needed
 npm run build      # lib/ is committed, so rebuild when src/ changes
 ```
 
